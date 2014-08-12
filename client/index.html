@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>chatterbox</title>
+    <link rel="stylesheet" href="styles/styles.css">
+
+    <!-- dependencies -->
+    <script src="bower_components/jquery/jquery.min.js"></script>
+    <script src="bower_components/underscore/underscore.js"></script>
+    <!-- your scripts -->
+    <script src="scripts/config.js"></script>
+    <script src="scripts/app.js"></script>
+  </head>
+  <body>
+    <div id="main">
+      <h1>chatterbox</h1>
+      <form id="send" action="javascript:app.handleSubmit()">
+        <input type='text' class='sendText'></input>
+        <input type='submit' class='submit'></input>
+      </form>
+      <!-- Your HTML goes here! -->
+      <div id="chats"></div>
+      <div id="roomSelect">
+        <h3>Chat Rooms</h3>
+        <input type="text" class="addRoom"></input>
+        <input type="button" value="Submit" class="submitNewRoom"></input>
+        <div class="roomContainer">
+          <div class="currentRoom">Lobby</div>
+        </div>
+      </div>
+      <div id="friendsList">
+        <h3>Friends List</h3>
+      </div>
+    </div>
+  </body>
+</html>

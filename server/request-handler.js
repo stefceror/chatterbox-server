@@ -4,8 +4,8 @@
  * You'll have to figure out a way to export this function from
  * this file and include it in basic-server.js so that it actually works.
  * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
-
-var handleRequest = function(request, response) {
+var url = require('url');
+exports.handleRequest = function(request, response) {
   /* the 'request' argument comes from nodes http module. It includes info about the
   request - such as what URL the browser is requesting. */
 
@@ -15,21 +15,47 @@ var handleRequest = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
 
   var statusCode = 200;
+  var headers = defaultCorsHeaders;
+  response.writeHead(statusCode, headers);
+  headers['Content-Type'] = "text/plain";
+  var storage = {};
+  storage.results = [JSON.stringify({username: "user"})];
+  var parsedUrl = url.parse(request.url);
+  console.log(request.url.substring(0, 17));
+  if(request.url.substring(0, 17) === '/classes/messages' && request.method === 'GET') {
+    response.writeHead(200, headers);
+    response.end(JSON.stringify(storage));
+  } else if (request.method === 'OPTIONS') {
+    response.end();
+  } else if(request.url.substring(0, 17) === '/classes/messages' && request.method === 'POST') {
+    request.on('data', function(chunk) {
+      var fullText = '';
+      fullText += chunk.toString();
+    });
+    request.on('end', function() {
+      storage.results.push(JSON.stringify(fullText));
+      response.writeHead(201, {'Content-Type': 'text/html'});
+      response.end();
+    });
+  }
+  else {
+    response.writeHead(404);
+    response.end('404 file not found');
+  }
+
+
 
   /* Without this line, this server wouldn't work. See the note
-   * below about CORS. */
-  var headers = defaultCorsHeaders;
 
-  headers['Content-Type'] = "text/plain";
+   * below about CORS. */
 
   /* .writeHead() tells our server what HTTP status code to send back */
-  response.writeHead(statusCode, headers);
 
   /* Make sure to always call response.end() - Node will not send
    * anything back to the client until you do. The string you pass to
    * response.end() will be the body of the response - i.e. what shows
    * up in the browser.*/
-  response.end("Hello, World!");
+  //response.end(storage[0]);
 };
 
 /* These headers will allow Cross-Origin Resource Sharing (CORS).
