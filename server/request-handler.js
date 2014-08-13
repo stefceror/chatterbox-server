@@ -5,7 +5,16 @@
  * this file and include it in basic-server.js so that it actually works.
  * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
 var url = require('url');
-exports.handleRequest = function(request, response) {
+storage = {};
+storage.results = [];
+var currentId = 1;
+console.log('this is the url ' + url);
+var createRoom = function(roomName) {
+  if(storage[roomName] === undefined) {
+    storage[roomName] = {results: []};
+  } 
+}
+exports.handler = function(request, response) {
   /* the 'request' argument comes from nodes http module. It includes info about the
   request - such as what URL the browser is requesting. */
 
@@ -14,31 +23,50 @@ exports.handleRequest = function(request, response) {
 
   console.log("Serving request type " + request.method + " for url " + request.url);
 
+  //information for headers
   var statusCode = 200;
   var headers = defaultCorsHeaders;
   response.writeHead(statusCode, headers);
-  headers['Content-Type'] = "text/plain";
-  var storage = {};
-  storage.results = [JSON.stringify({username: "user"})];
-  var parsedUrl = url.parse(request.url);
-  console.log(request.url.substring(0, 17));
-  if(request.url.substring(0, 17) === '/classes/messages' && request.method === 'GET') {
-    response.writeHead(200, headers);
-    response.end(JSON.stringify(storage));
-  } else if (request.method === 'OPTIONS') {
-    response.end();
-  } else if(request.url.substring(0, 17) === '/classes/messages' && request.method === 'POST') {
-    request.on('data', function(chunk) {
-      var fullText = '';
-      fullText += chunk.toString();
-    });
-    request.on('end', function() {
-      storage.results.push(JSON.stringify(fullText));
-      response.writeHead(201, {'Content-Type': 'text/html'});
-      response.end();
-    });
+
+  //message storage
+  // var storage = {};
+  var fullText = '';
+  //respond to an OPTIONS request to any URL
+  if (request.method === 'OPTIONS') {
+    console.log('Responding with ' + statusCode)
+    response.end('ok');
   }
-  else {
+  var parsedUrl = url.parse(request.url);
+  //checks URL
+  if(parsedUrl.pathname.substring(0,9) === '/classes/') {
+    var room = parsedUrl.pathname.substring(9);
+    if(storage[room] === undefined) {
+      createRoom(room);
+    }
+    var roomContents = storage[room];
+
+
+  //respond to a get request
+    if(request.method === 'GET') {
+      response.writeHead(200, headers);
+      response.end(JSON.stringify(roomContents));
+      //respond to a POST request
+    } else if (request.method === 'POST') {
+      //accepts data and concats to variable
+      request.on('data', function(chunk) {
+        fullText += chunk.toString();
+      });
+      //sends response when all  data is received and pushes data to storage
+      request.on('end', function() {
+        response.writeHead(201, headers);
+        roomContents.results.unshift(JSON.parse(fullText));
+        roomContents.results[roomContents.results.length - 1].objectId = currentId;
+        currentId++;
+        response.end();
+      });
+    }
+    //responds to illegal requests
+  } else {
     response.writeHead(404);
     response.end('404 file not found');
   }
@@ -67,5 +95,6 @@ var defaultCorsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
   "access-control-allow-headers": "content-type, accept",
-  "access-control-max-age": 10 // Seconds.
+  "access-control-max-age": 10, // Seconds.
+  'Content-Type': "application/json"
 };

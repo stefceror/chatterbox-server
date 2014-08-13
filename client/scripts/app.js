@@ -1,5 +1,5 @@
 var app = {
-  server: "http://127.0.0.1:3000/classes/messages",
+  server: "http://127.0.0.1:3000/classes/",
   initialMessageCount: 1,
   lastMessageID: undefined,
   rooms: {
@@ -60,7 +60,7 @@ app.addEventListeners = function() {
 app.fetch = function(){
   //maybe filter by room
   $.ajax({
-    url: app.server,
+    url: app.server + user.room,
     type: "GET",
     contentType: "jsonp",
     data: { order: "-createdAt" },
@@ -161,7 +161,7 @@ app.handleSubmit = function(){
 app.send = function(message){
   //send a message
   $.ajax({
-    url: app.server,
+    url: app.server + message['roomname'],
     type: "POST",
     data: JSON.stringify(message),
     dataType:"json",
