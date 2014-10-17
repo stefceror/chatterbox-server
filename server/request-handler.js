@@ -4,8 +4,17 @@
  * You'll have to figure out a way to export this function from
  * this file and include it in basic-server.js so that it actually works.
  * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
-
-var handleRequest = function(request, response) {
+var url = require('url');
+storage = {};
+storage.results = [];
+var currentId = 1;
+console.log('this is the url ' + url);
+var createRoom = function(roomName) {
+  if(storage[roomName] === undefined) {
+    storage[roomName] = {results: []};
+  } 
+}
+exports.handler = function(request, response) {
   /* the 'request' argument comes from nodes http module. It includes info about the
   request - such as what URL the browser is requesting. */
 
@@ -14,22 +23,67 @@ var handleRequest = function(request, response) {
 
   console.log("Serving request type " + request.method + " for url " + request.url);
 
+  //information for headers
   var statusCode = 200;
+  var headers = defaultCorsHeaders;
+  response.writeHead(statusCode, headers);
+
+  //message storage
+  // var storage = {};
+  var fullText = '';
+  //respond to an OPTIONS request to any URL
+  if (request.method === 'OPTIONS') {
+    console.log('Responding with ' + statusCode)
+    response.end('ok');
+  }
+  var parsedUrl = url.parse(request.url);
+  //checks URL
+  if(parsedUrl.pathname.substring(0,9) === '/classes/') {
+    var room = parsedUrl.pathname.substring(9);
+    if(storage[room] === undefined) {
+      createRoom(room);
+    }
+    var roomContents = storage[room];
+
+
+  //respond to a get request
+    if(request.method === 'GET') {
+      response.writeHead(200, headers);
+      response.end(JSON.stringify(roomContents));
+      //respond to a POST request
+    } else if (request.method === 'POST') {
+      //accepts data and concats to variable
+      request.on('data', function(chunk) {
+        fullText += chunk.toString();
+      });
+      //sends response when all  data is received and pushes data to storage
+      request.on('end', function() {
+        response.writeHead(201, headers);
+        roomContents.results.unshift(JSON.parse(fullText));
+        roomContents.results[roomContents.results.length - 1].objectId = currentId;
+        currentId++;
+        response.end();
+      });
+    }
+    //responds to illegal requests
+  } else {
+    response.writeHead(404);
+    response.end('404 file not found');
+  }
+
+
 
   /* Without this line, this server wouldn't work. See the note
-   * below about CORS. */
-  var headers = defaultCorsHeaders;
 
-  headers['Content-Type'] = "text/plain";
+   * below about CORS. */
 
   /* .writeHead() tells our server what HTTP status code to send back */
-  response.writeHead(statusCode, headers);
 
   /* Make sure to always call response.end() - Node will not send
    * anything back to the client until you do. The string you pass to
    * response.end() will be the body of the response - i.e. what shows
    * up in the browser.*/
-  response.end("Hello, World!");
+  //response.end(storage[0]);
 };
 
 /* These headers will allow Cross-Origin Resource Sharing (CORS).
@@ -41,5 +95,6 @@ var defaultCorsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
   "access-control-allow-headers": "content-type, accept",
-  "access-control-max-age": 10 // Seconds.
+  "access-control-max-age": 10, // Seconds.
+  'Content-Type': "application/json"
 };
